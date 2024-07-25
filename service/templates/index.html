@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ChatBot</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f4;
+                padding: 20px;
+                color: #333;
+            }
+            #output {
+                font-size: 24px;
+                font-family: monospace;
+                border: 1px solid #ccc;
+                padding: 10px;
+                margin-top: 20px;
+                height: 200px;
+                overflow: auto;
+                background-color: #fff;
+            }
+            #startButton {
+                background-color: #18ad91; /* Green */
+                border: none;
+                color: white;
+                padding: 15px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+            }
+            input[type="text"] {
+                width: 100%;
+                padding: 12px 20px;
+                margin: 8px 0;
+                box-sizing: border-box;
+                border: 3px solid #ccc;
+                -webkit-transition: 0.5s;
+                transition: 0.5s;
+                outline: none;
+            }
+            input[type="text"]:focus {
+                border: 3px solid #555;
+            }
+        </style>
+    </head>
+    <body>
+        <input type="text" id="input" placeholder="Input your questions" />
+        <button id="startButton">Ask</button>
+        <div id="output"></div>
+
+        <script type="module">
+            import { fetchEventSource } from "https://esm.run/@microsoft/fetch-event-source";
+            const outputDiv = document.getElementById("output");
+            const startButton = document.getElementById("startButton");
+            startButton.addEventListener("click", function () {
+                const url =
+                    window.location.protocol +
+                    "//" +
+                    window.location.host +
+                    "/chatbot";
+                outputDiv.innerHTML = "";
+                const formData = new FormData();
+                formData.append(
+                    "question",
+                    document.getElementById("input").value,
+                );
+                fetchEventSource(url, {
+                    method: "POST",
+                    Headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                    body: formData,
+                    onmessage: (event) => {
+                        console.log(event);
+                        try {
+                            if (event.data === "[DONE]") {
+                                startButton.disabled = false;
+                            } else {
+                                const msg = JSON.parse(event.data);
+                                if (msg.type == "system") {
+                                    console.log(msg.system);
+                                } else {
+                                    outputDiv.innerHTML += msg.content;
+                                    outputDiv.scrollTop =
+                                        outputDiv.scrollHeight;
+                                }
+                            }
+                        } catch (e) {
+                            console.error("error: ", e);
+                        }
+                    },
+                });
+                startButton.disabled = true;
+            });
+        </script>
+    </body>
+</html>
